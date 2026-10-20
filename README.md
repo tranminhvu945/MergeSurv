@@ -4,7 +4,7 @@
 
 This repository provides the official implementation of **MergeSurv**, a merging-based continual learning framework for whole-slide image (WSI) survival analysis.
 
-![Overview of the MergeSurv framework](assets/Main_method.pdf)
+![Overview of the MergeSurv framework](assets/Main_method.png)
 
 ## Environment
 
@@ -20,7 +20,7 @@ pip install -r requirements.txt
 ## Running Experiments
 ### Configurations
 
-- `configs/forward.yaml`: BLCA → UCEC → LUAD → BRCA (default).
+- `configs/forward.yaml`: BLCA → UCEC → LUAD → BRCA.
 - `configs/reverse.yaml`: BRCA → LUAD → UCEC → BLCA.
 - `configs/other.yaml`: LUAD → BLCA → UCEC → BRCA.
 
