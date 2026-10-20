@@ -1,0 +1,70 @@
+dataset:
+  order: "other"
+
+  tasks:
+    forward: ["blca", "ucec", "luad", "brca"]
+    reverse: ["brca", "luad", "ucec", "blca"]
+    other: ["luad", "blca", "ucec", "brca"]
+
+  blca:
+    csv: "/datastore/uittogether3/LuuTru/Vutm/MergeSlide/data/tcga_blca_all_clean.csv"
+    features: "/datastore/uittogether3/LuuTru/Vutm/Features/TCGA-BLCA/10x_256px_0px_overlap/features_conch_v15/"
+    splits: "/datastore/uittogether3/LuuTru/Vutm/MergeSlide/splits/TCGA_BLCA/"
+
+  brca:
+    csv: "/datastore/uittogether3/LuuTru/Vutm/MergeSlide/data/tcga_brca_all_clean.csv"
+    features: "/datastore/uittogether3/LuuTru/Vutm/Features/TCGA-BRCA/10x_256px_0px_overlap/features_conch_v15/"
+    splits: "/datastore/uittogether3/LuuTru/Vutm/MergeSlide/splits/TCGA_BRCA/"
+
+  luad:
+    csv: "/datastore/uittogether3/LuuTru/Vutm/MergeSlide/data/tcga_luad_all_clean.csv"
+    features: "/datastore/uittogether3/LuuTru/Vutm/Features/TCGA-LUAD/10x_256px_0px_overlap/features_conch_v15/"
+    splits: "/datastore/uittogether3/LuuTru/Vutm/MergeSlide/splits/TCGA_LUAD/"
+
+  ucec:
+    csv: "/datastore/uittogether3/LuuTru/Vutm/MergeSlide/data/tcga_ucec_all_clean.csv"
+    features: "/datastore/uittogether3/LuuTru/Vutm/Features/TCGA-UCEC/10x_256px_0px_overlap/features_conch_v15/"
+    splits: "/datastore/uittogether3/LuuTru/Vutm/MergeSlide/splits/TCGA_UCEC/"
+
+survival:
+  time_col: "survival_months"
+  event_col: "censorship"
+  event_observed_value: 1
+  num_prompt_bins: 5
+  boundary_quantiles: [0.2, 0.4, 0.6, 0.8]
+  cox_eps: 1.0e-7
+  prompt_temperature: 0.07
+  ordinal_temperature: 1.0
+
+dataloader:
+  batch_size: 8
+  num_workers: 8
+
+training:
+  num_folds: 5
+  num_tasks: 4
+  num_epochs: 20
+  train_num_patches: 1000
+  lr: 1.0e-5
+  head_lr: 1.0e-4
+  weight_decay: 1.0e-4
+  seed: 0
+  early_stopping_patience: 5
+  
+  prompt_loss_weight: 0.00
+  ordinal_loss_weight: 0.00
+  cox_loss_weight: 1.00
+
+  survival_hidden_dim: 512
+  survival_dropout: 0.25
+
+  save_head: true
+
+evaluation:
+  mode: "task_il"
+  test_num_patches: 1000
+
+paths:
+  finetuned_checkpoints: "./checkpoints_ablation/finetuned_only_cox"
+  
+  merged_checkpoints: "./checkpoints_ablation/task_order/other"
