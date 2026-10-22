@@ -55,11 +55,7 @@ training:
   seed: 0
   early_stopping_patience: 5
 
-  # Stage-1 objective: task-specific Cox head + prompt auxiliary.
-  # prompt_loss_weight: 0.10
-  # ordinal_loss_weight: 0.05
-  # cox_loss_weight: 1.00
-  
+  # Stage-1 objective: Cox partial likelihood only.
   prompt_loss_weight: 0.00
   ordinal_loss_weight: 0.00
   cox_loss_weight: 1.00

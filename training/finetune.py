@@ -134,79 +134,6 @@ def cosine_lr(optimizer, base_lr, warmup_length, steps):
     return _lr_adjuster
 
 
-class EarlyStopping:
-    """Early stop and checkpoint by validation C-index.
-
-    This setting is appropriate when the available held-out split is validation
-    only and the primary model-selection target is ranking performance. val_loss
-    is still stored and used only as a tie-breaker when val_cindex is unchanged.
-    """
-
-    def __init__(
-        self,
-        patience: int = 5,
-        cindex_min_delta: float = 0.0,
-        verbose: bool = False,
-    ):
-        self.patience = int(patience)
-        self.cindex_min_delta = float(cindex_min_delta)
-        self.verbose = bool(verbose)
-
-        self.counter = 0
-        self.early_stop = False
-
-        self.best_cindex = -float("inf")
-        self.best_val_loss = float("inf")
-        self.best_epoch = -1
-        self.best_model_weights = None
-        self.best_prompt_aux_weights = None
-
-    @staticmethod
-    def _copy_state_dict(module: nn.Module):
-        return {k: v.detach().cpu().clone() for k, v in module.state_dict().items()}
-
-    def __call__(self, val_cindex, val_loss, model, prompt_aux, epoch):
-        if not np.isfinite(val_cindex):
-            self.counter += 1
-            if self.verbose:
-                print(f"EarlyStopping counter: {self.counter}/{self.patience} (non-finite val_cindex)")
-            if self.counter >= self.patience:
-                self.early_stop = True
-            return
-
-        improved_cindex = val_cindex > self.best_cindex + self.cindex_min_delta
-        tie_better_loss = (
-            abs(val_cindex - self.best_cindex) <= self.cindex_min_delta
-            and np.isfinite(val_loss)
-            and val_loss < self.best_val_loss
-        )
-
-        if improved_cindex or tie_better_loss:
-            self.best_cindex = float(val_cindex)
-            self.best_val_loss = float(val_loss) if np.isfinite(val_loss) else self.best_val_loss
-            self.best_epoch = int(epoch)
-            self.counter = 0
-            self.best_model_weights = self._copy_state_dict(model)
-            self.best_prompt_aux_weights = self._copy_state_dict(prompt_aux)
-            return
-
-        self.counter += 1
-        if self.verbose:
-            print(f"EarlyStopping counter: {self.counter}/{self.patience} (val_cindex did not improve)")
-        if self.counter >= self.patience:
-            self.early_stop = True
-
-    def state_dict(self):
-        return {
-            "early_stop_monitor": "val_cindex",
-            "checkpoint_monitor": "val_cindex",
-            "patience": self.patience,
-            "cindex_min_delta": self.cindex_min_delta,
-            "best_cindex": self.best_cindex,
-            "best_val_loss": self.best_val_loss,
-            "best_epoch": self.best_epoch,
-        }
-
 def make_grad_scaler():
     if torch.cuda.is_available():
         return torch.amp.GradScaler("cuda", enabled=True)
@@ -264,11 +191,6 @@ def _to_numpy_list(tensor_or_array):
     if torch.is_tensor(tensor_or_array):
         return tensor_or_array.detach().cpu().numpy().tolist()
     return np.asarray(tensor_or_array).tolist()
-
-
-def _events_from_censorship(censorship: torch.Tensor | np.ndarray | list) -> np.ndarray:
-    c = np.asarray(_to_numpy_list(censorship), dtype=int)
-    return (1 - c).astype(int)
 
 
 def forward_bag_batch(
@@ -346,6 +268,72 @@ def _dataset_times_events(loader):
     events = (1 - df["censorship"].values.astype(int)).astype(int)
     return times.tolist(), events.tolist()
 
+class EarlyStopping:
+    def __init__(
+        self,
+        patience: int = 5,
+        cindex_min_delta: float = 0.0,
+        verbose: bool = False,
+    ):
+        self.patience = int(patience)
+        self.cindex_min_delta = float(cindex_min_delta)
+        self.verbose = bool(verbose)
+
+        self.counter = 0
+        self.early_stop = False
+
+        self.best_cindex = -float("inf")
+        self.best_val_loss = float("inf")
+        self.best_epoch = -1
+        self.best_model_weights = None
+        self.best_prompt_aux_weights = None
+
+    @staticmethod
+    def _copy_state_dict(module: nn.Module):
+        return {k: v.detach().cpu().clone() for k, v in module.state_dict().items()}
+
+    def __call__(self, val_cindex, val_loss, model, prompt_aux, epoch):
+        if not np.isfinite(val_cindex):
+            self.counter += 1
+            if self.verbose:
+                print(f"EarlyStopping counter: {self.counter}/{self.patience} (non-finite val_cindex)")
+            if self.counter >= self.patience:
+                self.early_stop = True
+            return
+
+        improved_cindex = val_cindex > self.best_cindex + self.cindex_min_delta
+        tie_better_loss = (
+            abs(val_cindex - self.best_cindex) <= self.cindex_min_delta
+            and np.isfinite(val_loss)
+            and val_loss < self.best_val_loss
+        )
+
+        if improved_cindex or tie_better_loss:
+            self.best_cindex = float(val_cindex)
+            self.best_val_loss = float(val_loss) if np.isfinite(val_loss) else self.best_val_loss
+            self.best_epoch = int(epoch)
+            self.counter = 0
+            self.best_model_weights = self._copy_state_dict(model)
+            self.best_prompt_aux_weights = self._copy_state_dict(prompt_aux)
+            return
+
+        self.counter += 1
+        if self.verbose:
+            print(f"EarlyStopping counter: {self.counter}/{self.patience} (val_cindex did not improve)")
+        if self.counter >= self.patience:
+            self.early_stop = True
+
+    def state_dict(self):
+        return {
+            "early_stop_monitor": "val_cindex",
+            "checkpoint_monitor": "val_cindex",
+            "patience": self.patience,
+            "cindex_min_delta": self.cindex_min_delta,
+            "best_cindex": self.best_cindex,
+            "best_val_loss": self.best_val_loss,
+            "best_epoch": self.best_epoch,
+        }
+        
 
 def evaluate_full_split(
     loader,

@@ -49,16 +49,6 @@ def cox_ph_loss(
         raise FloatingPointError("Non-finite Cox PH loss.")
     return loss
 
-
-class CoxPHLoss(nn.Module):
-    def __init__(self, eps: float = 1e-7):
-        super().__init__()
-        self.eps = eps
-
-    def forward(self, risk_scores, event_times, events):
-        return cox_ph_loss(risk_scores, event_times, events, eps=self.eps)
-
-
 def censored_aware_prompt_loss(
     prompt_logits: torch.Tensor,
     time_bin: torch.Tensor,

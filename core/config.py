@@ -13,7 +13,6 @@ import torch
 import yaml
 import json
 
-CANONICAL_TASK_ORDER = ["blca", "ucec", "luad", "brca"]
 DEFAULT_NUM_PROMPT_BINS = 5
 
 
@@ -88,35 +87,6 @@ def get_num_prompt_bins(cfg: Mapping[str, Any] | None = None) -> int:
     if cfg is None:
         return DEFAULT_NUM_PROMPT_BINS
     return int(cfg.get("survival", {}).get("num_prompt_bins", DEFAULT_NUM_PROMPT_BINS))
-
-
-def get_prompt_bin_counts(task_order: Iterable[str], cfg: Mapping[str, Any] | None = None) -> list[int]:
-    n = get_num_prompt_bins(cfg)
-    return [n for _ in task_order]
-
-
-# Backward-compatible names for scripts originally adapted from classification.
-def get_num_bins(task_order: Iterable[str], cfg: Mapping[str, Any] | None = None) -> list[int]:
-    return get_prompt_bin_counts(task_order, cfg)
-
-
-def get_num_classes(task_order: Iterable[str], cfg: Mapping[str, Any] | None = None) -> list[int]:
-    return get_prompt_bin_counts(task_order, cfg)
-
-
-def get_bin_slices(task_order: Iterable[str], cfg: Mapping[str, Any] | None = None) -> dict[int, tuple[int, int]]:
-    slices: dict[int, tuple[int, int]] = {}
-    start = 0
-    for task_id, _task_name in enumerate(task_order):
-        n = get_num_prompt_bins(cfg)
-        slices[task_id] = (start, start + n)
-        start += n
-    return slices
-
-
-def get_class_slices(task_order: Iterable[str], cfg: Mapping[str, Any] | None = None) -> dict[int, tuple[int, int]]:
-    return get_bin_slices(task_order, cfg)
-
 
 def seed_everything(seed: int, device: torch.device | str | None = None) -> None:
     random.seed(seed)
